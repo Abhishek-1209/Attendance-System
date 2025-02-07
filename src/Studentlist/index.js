@@ -9,7 +9,7 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import css from "./Studentlist.css";
+import css from "./studentlist.css";
 
 const Studentlist = () => {
   const columns = [
