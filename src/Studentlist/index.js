@@ -1,19 +1,63 @@
-import React from 'react'
-import studentdata from '../Json/Studentdata'
+import React from "react";
+import studentdata from "../Json/Studentdata";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+} from "@mui/material";
+import css from "./studentlist.css";
 
 const Studentlist = () => {
-  return (
-    <div>
-      {studentdata.map((item, index)=>(
-        <div key={index} className="flex flex-row justify-between">
-        <h5>{item.roll}</h5>
-        <h5>{item.name}</h5>
-        <h5>{item.section}</h5>
-        <h5>{item.image}</h5>
-        </div>
-      ))}
-    </div>
-  )
-}
+  const columns = [
+    { name: "S.no", align: "left", width: "30px" },
+    { name: "Name", align: "left", minWidth: "100px" },
+    { name: "Roll No", align: "left", minWidth: "100px" },
+    { name: "Section", align: "left", minWidth: "100px" },
+    { name: "Status", align: "left", minWidth: "110px" },
+  ];
 
-export default Studentlist
+  const rowData = studentdata.map((item, index) => ({
+    "S.no": index + 1,
+    Name: item.name,
+    "Roll No": item.roll,
+    Section: item.section,
+    Status: "P | A",
+  }));
+
+  return (
+    <TableContainer component={Paper}>
+      <Table sx={{ minWidth: 650 }} aria-label="student table">
+        <TableHead>
+          <TableRow>
+            {columns.map((column) => (
+              <TableCell
+                key={column.name}
+                align={column.align}
+                style={{ width: column.width, minWidth: column.minWidth }}
+              >
+                {column.name}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rowData.map((row, index) => (
+            <TableRow key={index}>
+              {columns.map((column) => (
+                <TableCell key={column.name} align={column.align}>
+                  {row[column.name]}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+};
+
+export default Studentlist;
