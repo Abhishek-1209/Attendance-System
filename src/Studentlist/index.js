@@ -1,5 +1,4 @@
-import React from "react";
-import studentdata from "../Json/Studentdata";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -9,9 +8,34 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import css from "./studentlist.css";
+import { getDocs, collection } from "firebase/firestore";
+import { db } from "../firebase/firebase-config";
 
 const Studentlist = () => {
+  const [students, setStudents] = useState([]);
+  console.log(students);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "Students"));
+
+        const studentsArray = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        const sortedStudents = studentsArray.sort(
+          (a, b) => a.Roll_No - b.Roll_No
+        );
+
+        setStudents(sortedStudents);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const columns = [
     { name: "S.no", align: "left", width: "30px" },
     { name: "Name", align: "left", minWidth: "100px" },
@@ -20,11 +44,11 @@ const Studentlist = () => {
     { name: "Status", align: "left", minWidth: "110px" },
   ];
 
-  const rowData = studentdata.map((item, index) => ({
+  const rowData = students.map((item, index) => ({
     "S.no": index + 1,
-    Name: item.name,
-    "Roll No": item.roll,
-    Section: item.section,
+    Name: item.Name,
+    "Roll No": item.Roll_No,
+    Section: item.Section,
     Status: "P | A",
   }));
 
