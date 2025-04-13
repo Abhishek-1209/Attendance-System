@@ -19,10 +19,14 @@ const Studentlist = () => {
       try {
         const querySnapshot = await getDocs(collection(db, "Students"));
 
-        const studentsArray = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const studentsArray = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            attendance: Array.isArray(data.attendance) ? data.attendance : [], // <- ensures it’s always an array
+          };
+        });
         const sortedStudents = studentsArray.sort(
           (a, b) => a.Roll_No - b.Roll_No
         );
@@ -49,7 +53,9 @@ const Studentlist = () => {
     Name: item.Name,
     "Roll No": item.Roll_No,
     Section: item.Section,
-    Status: "P | A",
+    Status: item.attendance?.some((a) => a.date === new Date().toISOString().split("T")[0])
+  ? "✅ Present"
+  : "❌ Absent",
   }));
 
   return (
