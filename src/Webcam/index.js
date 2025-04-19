@@ -156,7 +156,7 @@ const WebcamCapture = () => {
       }
     }
   };
-
+  
   return (
     <div className="webcam">
       <Webcam

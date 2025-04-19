@@ -11,3 +11,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+.Toastify__toast {
+  font-family: "Roboto", sans-serif;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.Toastify__toast--success {
+  background-color: #4caf50; /* theme.palette.success.main */
+  color: #fff;
+}
+
+.Toastify__toast--error {
+  background-color: #f44336; /* theme.palette.error.main */
+  color: #fff;
+}
+
+.Toastify__toast--info {
+  background-color: #2196f3; /* theme.palette.info.main */
+  color: #fff;
+}
+
+.Toastify__toast--warning {
+  background-color: #ff9800; /* theme.palette.warning.main */
+  color: #fff;
+}
