@@ -13,7 +13,7 @@ import { db } from "../firebase/firebase-config";
 import { attendanceTimeSlot } from "../utils/attendanceSlot";
 
 const isWithinTimeSlot = (timeStr, startStr, endStr) => {
-  const [h, m] = timeStr.split(":").map(Number);
+  const [h, m, s] = timeStr.split(":").map(Number);
   const current = h * 60 + m;
 
   const [sh, sm] = startStr.split(":").map(Number);
@@ -22,7 +22,7 @@ const isWithinTimeSlot = (timeStr, startStr, endStr) => {
   const start = sh * 60 + sm;
   const end = eh * 60 + em;
 
-  return current >= start && current <= end;
+  return current >= start && current < end;
 };
 
 const Studentlist = () => {
@@ -55,20 +55,18 @@ const Studentlist = () => {
     fetchData();
   }, []);
 
-  // Build columns
   const columns = [
     { name: "S.no", align: "left", width: "30px" },
     { name: "Name", align: "left", minWidth: "100px" },
     { name: "Roll No", align: "left", minWidth: "100px" },
     { name: "Section", align: "left", minWidth: "100px" },
-    ...attendanceTimeSlot.map((slot, index) => ({
+    ...attendanceTimeSlot.map((slot) => ({
       name: `${slot.start} - ${slot.end}`,
       align: "center",
       minWidth: "120px",
     })),
   ];
 
-  // Build row data
   const rowData = students.map((student, index) => {
     const attendanceToday = student.attendance.filter((a) => a.date === today);
 

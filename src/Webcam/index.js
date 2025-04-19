@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import Webcam from "react-webcam";
 import * as faceapi from "face-api.js";
+import { getCurrentTimeSlot } from "../utils/attendanceSlot";
 import {
   collection,
   getDocs,
@@ -16,8 +17,8 @@ const WebcamCapture = () => {
   const webcamRef = useRef(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [faceMatcher, setFaceMatcher] = useState(null);
+  const [toastShown, setToastShown] = useState(new Set());
 
-  // Load face-api.js models from CDN
   useEffect(() => {
     const loadModels = async () => {
       try {
@@ -32,33 +33,32 @@ const WebcamCapture = () => {
             "https://justadudewhohacks.github.io/face-api.js/models"
           ),
         ]);
-        console.log("✅ Models loaded from CDN");
+        console.log("✅ Models loaded");
         setModelsLoaded(true);
-      } catch (error) {
-        console.error("❌ Error loading models:", error);
+      } catch (err) {
+        console.error("Error loading models", err);
       }
     };
-
     loadModels();
   }, []);
 
-  // Load student face data
   useEffect(() => {
-    const loadFaceData = async () => {
+    const loadLabeledDescriptors = async () => {
       const snapshot = await getDocs(collection(db, "Students"));
       const labeledDescriptors = [];
 
       for (const docSnap of snapshot.docs) {
         const student = docSnap.data();
-
-        // Access Images map correctly
         const imageMap = student.Images;
+
         if (!imageMap) continue;
 
         const imageUrls = Object.values(imageMap).filter(
           (url) => url.startsWith("http") && url.match(/\.(jpeg|jpg|png)$/)
         );
+
         const descriptors = [];
+
         for (const url of imageUrls) {
           try {
             const img = await faceapi.fetchImage(url);
@@ -68,11 +68,8 @@ const WebcamCapture = () => {
               .withFaceDescriptor();
 
             if (detection) descriptors.push(detection.descriptor);
-          } catch (error) {
-            console.error(
-              `❌ Failed to load/process image for ${student.Name} from URL: ${url}`,
-              error
-            );
+          } catch (err) {
+            console.error(`Error processing image ${url}`, err);
           }
         }
 
@@ -83,20 +80,15 @@ const WebcamCapture = () => {
         }
       }
 
-      if (labeledDescriptors.length === 0) {
-        console.warn("⚠️ No valid face descriptors found.");
-        return;
+      if (labeledDescriptors.length) {
+        setFaceMatcher(new faceapi.FaceMatcher(labeledDescriptors, 0.5));
+        console.log("✅ Face matcher initialized");
       }
-
-      const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-      console.log("✅ Face matcher initialized with known faces");
-      setFaceMatcher(matcher);
     };
 
-    if (modelsLoaded) loadFaceData();
+    if (modelsLoaded) loadLabeledDescriptors();
   }, [modelsLoaded]);
 
-  // Detect and match face from webcam
   useEffect(() => {
     const interval = setInterval(async () => {
       if (
@@ -116,19 +108,18 @@ const WebcamCapture = () => {
           const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
 
           if (bestMatch.label !== "unknown") {
-            toast.success(`Matched with ${bestMatch.label}`);
+            console.log("✅ Match:", bestMatch.label);
             markAttendance(bestMatch.label);
           } else {
             console.log("❌ Face not recognized");
           }
         }
       }
-    }, 2000); // scan every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [modelsLoaded, faceMatcher]);
 
-  // Mark attendance in Firebase
   const markAttendance = async (name) => {
     const q = query(collection(db, "Students"), where("Name", "==", name));
     const snapshot = await getDocs(q);
@@ -139,21 +130,34 @@ const WebcamCapture = () => {
 
       const today = new Date().toISOString().split("T")[0];
       const timeNow = new Date().toLocaleTimeString();
+      const slot = getCurrentTimeSlot();
+      const toastKey = `${name}-${today}-${slot}`;
+
+      if (!slot) {
+        console.warn("⏳ Not in any valid slot.");
+        return;
+      }
 
       const studentData = studentDoc.data();
       const attendance = studentData.attendance || [];
 
-      const alreadyMarked = attendance.find((a) => a.date === today);
+      const alreadyMarked = attendance.some(
+        (entry) => entry.date === today && entry.slot === slot
+      );
 
       if (!alreadyMarked) {
-        const newRecord = { date: today, time: timeNow };
+        const newEntry = { date: today, time: timeNow, slot };
         await updateDoc(studentRef, {
-          attendance: [...attendance, newRecord],
+          attendance: [...attendance, newEntry],
         });
+        console.log(`✅ ${name} marked present for ${slot}`);
 
-        console.log(`📅 ${name} marked present at ${timeNow}`);
+        if (!toastShown.has(toastKey)) {
+          toast.success(`${name} marked present for ${slot}`);
+          setToastShown((prev) => new Set(prev).add(toastKey));
+        }
       } else {
-        console.log(`✅ ${name} already marked present today`);
+        console.log(`🟡 ${name} already marked for ${slot}`);
       }
     }
   };
