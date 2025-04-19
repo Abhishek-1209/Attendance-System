@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/firebase-config";
+import { toast } from "react-toastify";
 
 const WebcamCapture = () => {
   const webcamRef = useRef(null);
@@ -54,8 +55,8 @@ const WebcamCapture = () => {
         const imageMap = student.Images;
         if (!imageMap) continue;
 
-        const imageUrls = Object.values(imageMap).filter((url) =>
-          url.startsWith("http") && url.match(/\.(jpeg|jpg|png)$/)
+        const imageUrls = Object.values(imageMap).filter(
+          (url) => url.startsWith("http") && url.match(/\.(jpeg|jpg|png)$/)
         );
         const descriptors = [];
         for (const url of imageUrls) {
@@ -115,7 +116,7 @@ const WebcamCapture = () => {
           const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
 
           if (bestMatch.label !== "unknown") {
-            console.log("✅ Matched with", bestMatch.label);
+            toast.success(`Matched with ${bestMatch.label}`);
             markAttendance(bestMatch.label);
           } else {
             console.log("❌ Face not recognized");
@@ -156,7 +157,7 @@ const WebcamCapture = () => {
       }
     }
   };
-  
+
   return (
     <div className="webcam">
       <Webcam
