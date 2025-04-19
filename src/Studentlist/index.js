@@ -10,23 +10,38 @@ import {
 } from "@mui/material";
 import { getDocs, collection } from "firebase/firestore";
 import { db } from "../firebase/firebase-config";
+import { attendanceTimeSlot } from "../utils/attendanceSlot";
+
+const isWithinTimeSlot = (timeStr, startStr, endStr) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  const current = h * 60 + m;
+
+  const [sh, sm] = startStr.split(":").map(Number);
+  const [eh, em] = endStr.split(":").map(Number);
+
+  const start = sh * 60 + sm;
+  const end = eh * 60 + em;
+
+  return current >= start && current <= end;
+};
 
 const Studentlist = () => {
   const [students, setStudents] = useState([]);
-  console.log(students);
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "Students"));
-
         const studentsArray = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
             ...data,
-            attendance: Array.isArray(data.attendance) ? data.attendance : [], // <- ensures it’s always an array
+            attendance: Array.isArray(data.attendance) ? data.attendance : [],
           };
         });
+
         const sortedStudents = studentsArray.sort(
           (a, b) => a.Roll_No - b.Roll_No
         );
@@ -40,23 +55,39 @@ const Studentlist = () => {
     fetchData();
   }, []);
 
+  // Build columns
   const columns = [
     { name: "S.no", align: "left", width: "30px" },
     { name: "Name", align: "left", minWidth: "100px" },
     { name: "Roll No", align: "left", minWidth: "100px" },
     { name: "Section", align: "left", minWidth: "100px" },
-    { name: "Status", align: "left", minWidth: "110px" },
+    ...attendanceTimeSlot.map((slot, index) => ({
+      name: `${slot.start} - ${slot.end}`,
+      align: "center",
+      minWidth: "120px",
+    })),
   ];
 
-  const rowData = students.map((item, index) => ({
-    "S.no": index + 1,
-    Name: item.Name,
-    "Roll No": item.Roll_No,
-    Section: item.Section,
-    Status: item.attendance?.some((a) => a.date === new Date().toISOString().split("T")[0])
-  ? "✅ Present"
-  : "❌ Absent",
-  }));
+  // Build row data
+  const rowData = students.map((student, index) => {
+    const attendanceToday = student.attendance.filter((a) => a.date === today);
+
+    const timeSlotStatuses = attendanceTimeSlot.reduce((acc, slot) => {
+      const presentInSlot = attendanceToday.some((record) =>
+        isWithinTimeSlot(record.time, slot.start, slot.end)
+      );
+      acc[`${slot.start} - ${slot.end}`] = presentInSlot ? "✅" : "❌";
+      return acc;
+    }, {});
+
+    return {
+      "S.no": index + 1,
+      Name: student.Name,
+      "Roll No": student.Roll_No,
+      Section: student.Section,
+      ...timeSlotStatuses,
+    };
+  });
 
   return (
     <TableContainer component={Paper}>
