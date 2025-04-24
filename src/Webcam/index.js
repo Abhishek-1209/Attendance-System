@@ -123,45 +123,53 @@ const WebcamCapture = () => {
   const markAttendance = async (name) => {
     const q = query(collection(db, "Students"), where("Name", "==", name));
     const snapshot = await getDocs(q);
-
+  
     if (!snapshot.empty) {
       const studentDoc = snapshot.docs[0];
       const studentRef = doc(db, "Students", studentDoc.id);
-
+  
       const today = new Date().toISOString().split("T")[0];
       const timeNow = new Date().toLocaleTimeString();
       const slot = getCurrentTimeSlot();
       const toastKey = `${name}-${today}-${slot}`;
-
+  
       if (!slot) {
         console.warn("⏳ Not in any valid slot.");
         return;
       }
-
+  
       const studentData = studentDoc.data();
       const attendance = studentData.attendance || [];
-
+  
       const alreadyMarked = attendance.some(
         (entry) => entry.date === today && entry.slot === slot
       );
-
+  
+      // Check toast memory from localStorage (survives refresh)
+      const toastMemory = JSON.parse(localStorage.getItem("toastMemory")) || [];
+  
       if (!alreadyMarked) {
         const newEntry = { date: today, time: timeNow, slot };
         await updateDoc(studentRef, {
           attendance: [...attendance, newEntry],
         });
         console.log(`✅ ${name} marked present for ${slot}`);
-
-        if (!toastShown.has(toastKey)) {
+  
+        if (!toastMemory.includes(toastKey)) {
           toast.success(`${name} marked present for ${slot}`);
-          setToastShown((prev) => new Set(prev).add(toastKey));
+          toastMemory.push(toastKey);
+          localStorage.setItem("toastMemory", JSON.stringify(toastMemory));
         }
       } else {
         console.log(`🟡 ${name} already marked for ${slot}`);
+        if (!toastMemory.includes(toastKey)) {
+          toast.info(`${name} already marked for ${slot}`);
+          toastMemory.push(toastKey);
+          localStorage.setItem("toastMemory", JSON.stringify(toastMemory));
+        }
       }
     }
-  };
-
+  };  
   return (
     <div className="webcam">
       <Webcam

@@ -8,7 +8,7 @@ import {
   TableRow,
   Paper,
 } from "@mui/material";
-import { getDocs, collection } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore"; // 🔥 changed
 import { db } from "../firebase/firebase-config";
 import { attendanceTimeSlot } from "../utils/attendanceSlot";
 
@@ -30,29 +30,25 @@ const Studentlist = () => {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Students"));
-        const studentsArray = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            attendance: Array.isArray(data.attendance) ? data.attendance : [],
-          };
-        });
+    // 🔥 changed from getDocs to onSnapshot
+    const unsubscribe = onSnapshot(collection(db, "Students"), (snapshot) => {
+      const studentsArray = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          attendance: Array.isArray(data.attendance) ? data.attendance : [],
+        };
+      });
 
-        const sortedStudents = studentsArray.sort(
-          (a, b) => a.Roll_No - b.Roll_No
-        );
+      const sortedStudents = studentsArray.sort(
+        (a, b) => a.Roll_No - b.Roll_No
+      );
 
-        setStudents(sortedStudents);
-      } catch (error) {
-        console.error("Error fetching data: ", error);
-      }
-    };
+      setStudents(sortedStudents);
+    });
 
-    fetchData();
+    return () => unsubscribe(); // 🔥 cleanup listener
   }, []);
 
   const columns = [

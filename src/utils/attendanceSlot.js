@@ -1,9 +1,11 @@
 export const attendanceTimeSlot = [
-  { start: "09:15", end: "10:15" },
-  { start: "10:15", end: "11:15" },
-  { start: "11:15", end: "12:15" },
-  { start: "13:16", end: "14:15" },
-  { start: "14:15", end: "15:15" },
+  { start: "00:15", end: "00:20" },
+  { start: "11:41", end: "12:40" },
+  { start: "13:02", end: "13:03" },
+  { start: "14:20", end: "14:21" },
+  { start: "14:25", end: "15:23" },
+  { start: "12:47", end: "12:48" },
+  { start: "21:04", end: "22:15" },
 ];
 
 export const getCurrentTimeSlot = () => {
